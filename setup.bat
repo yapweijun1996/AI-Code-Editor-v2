@@ -2,15 +2,70 @@
 setlocal
 
 REM ==========================================================
-REM  AI Code Editor - Final Safe Setup Script with Debug Mode
+REM  AI Code Editor - Enhanced Setup Script for Node.js Environment
 REM ==========================================================
 
-REM --- Failsafe: Always pause at the very start so user sees script output, even if error happens early
-echo.
-echo [DEBUG] Script started and reached TOP
-echo [Notice] If this window closes immediately, you may need to run this script from a Command Prompt window.
-timeout /t 2 >nul
-echo [DEBUG] After initial timeout, proceeding to variable setup...
+REM --- Check Node.js version
+node -v >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] Node.js is not installed or not in PATH. Please install Node.js from https://nodejs.org/
+    pause
+    exit /b 1
+)
+
+REM --- Check npm version
+npm -v >nul 2>&1
+if %errorlevel% neq 0 (
+    echo [ERROR] npm is not installed or not in PATH. Please install npm with Node.js from https://nodejs.org/
+    pause
+    exit /b 1
+)
+
+REM --- Check pm2 installation
+pm2 -v >nul 2>&1
+if %errorlevel% neq 0 (
+    echo pm2 is not installed. Installing pm2 globally...
+    npm install pm2 -g
+    if %errorlevel% neq 0 (
+        echo [ERROR] Failed to install pm2 globally.
+        pause
+        exit /b 1
+    )
+)
+
+REM --- Change to backend directory and install dependencies
+echo Installing backend dependencies...
+cd /d "%~dp0backend"
+npm install
+if %errorlevel% neq 0 (
+    echo [ERROR] npm install failed. Please check the error messages above.
+    pause
+    exit /b 1
+)
+
+REM --- Start backend server with pm2
+echo Starting backend server with pm2...
+pm2 stop ai-code-editor >nul 2>&1
+pm2 delete ai-code-editor >nul 2>&1
+pm2 start index.js --name ai-code-editor
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to start backend server with pm2.
+    pause
+    exit /b 1
+)
+
+REM --- Save pm2 process list and set startup
+pm2 save
+pm2 startup
+
+REM --- Inform user setup is complete
+echo Setup completed successfully.
+echo The backend server is running and configured to start on boot.
+echo You can access the editor at http://localhost:3333
+pause
+exit /b 0
+
+REM --- End of script
 
 REM --- Configuration
 REM --- Set DEBUG to 1 to enable detailed step-by-step logging
