@@ -22,8 +22,8 @@ echo [INFO] Running command: %*>> %LOGFILE%
 %* >> %LOGFILE% 2>&1
 if %errorlevel% neq 0 (
     echo [ERROR] Command failed with errorlevel %errorlevel%. Check %LOGFILE% for details.
-    pause
-    exit /b %errorlevel%
+    call :wait_for_exit
+    goto :eof
 )
 goto :eof
 
@@ -47,8 +47,8 @@ if %errorLevel% == 0 (
 ) else (
     call :log "[ERROR] This script requires administrative privileges."
     echo Please right-click on setup.bat and select "Run as administrator".
-    pause
-    exit /b 1
+    call :wait_for_exit
+    goto :eof
 )
 
 echo.
@@ -59,7 +59,6 @@ echo Press any key to continue...
 pause >nul
 echo.
 
-
 :: Install backend dependencies
 call :log "[STEP 1/3] Installing backend dependencies..."
 cd backend
@@ -67,7 +66,6 @@ call :log_command npm install
 cd ..
 call :log "[SUCCESS] Backend dependencies installed successfully."
 echo.
-
 
 :: Install pm2 globally
 call :log "[STEP 2/3] Installing pm2 process manager globally..."
@@ -112,5 +110,27 @@ call :log "To check the server status, run: pm2 status"
 call :log "To view logs, run: pm2 logs %PM2_PROCESS_NAME%"
 call :log "A detailed setup log has been saved to: %LOGFILE%"
 echo.
-pause
+
+call :wait_for_exit
+
 endlocal
+goto :eof
+
+:: ============================================================================
+:: Wait for user to choose to exit
+:: ============================================================================
+:wait_for_exit
+echo.
+echo -------------------------------------------------
+echo Press E then ENTER to exit, or just ENTER to keep this window open...
+set "userinput="
+set /p userinput=Your choice: 
+if /i "%userinput%"=="E" (
+    exit /b
+) else (
+    echo Window will remain open for your review.
+    echo Press Ctrl+C to close this window manually when done.
+    :hold
+    pause
+    goto hold
+)
