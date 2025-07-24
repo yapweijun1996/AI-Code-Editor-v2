@@ -7,8 +7,10 @@ REM ==========================================================
 
 REM --- Failsafe: Always pause at the very start so user sees script output, even if error happens early
 echo.
+echo [DEBUG] Script started and reached TOP
 echo [Notice] If this window closes immediately, you may need to run this script from a Command Prompt window.
 timeout /t 2 >nul
+echo [DEBUG] After initial timeout, proceeding to variable setup...
 
 REM --- Configuration
 REM --- Set DEBUG to 1 to enable detailed step-by-step logging
@@ -33,6 +35,7 @@ if "%DEBUG%"=="1" (
 goto :eof
 
 REM --- Header
+echo [DEBUG] Reached header output
 echo ==========================================================
 echo        AI Code Editor Setup
 echo ==========================================================
@@ -49,6 +52,7 @@ call :debug_log "LOGFILE set to: %LOGFILE%"
 call :debug_log "BACKEND_DIR set to: %BACKEND_DIR%"
 
 REM --- Administrator Check
+echo [DEBUG] Reached admin check
 echo Verifying administrator privileges...
 call :debug_log "Running 'net session' to check for admin rights."
 net session >nul 2>&1
@@ -59,6 +63,7 @@ if %errorlevel% neq 0 (
     echo The window will remain open for 10 seconds.
     call :log "ERROR: Script not run as administrator."
     timeout /t 10
+    echo [DEBUG] Exiting due to failed admin check
     goto :safe_exit
 )
 echo Privileges confirmed.
@@ -66,6 +71,7 @@ call :debug_log "Admin privileges check passed."
 echo.
 
 REM --- Step 1: Install Backend Dependencies
+echo [DEBUG] Reached backend dependency installation
 echo ----------------------------------------------------------
 echo [1/3] Installing backend dependencies...
 echo This may take a few moments.
@@ -83,6 +89,7 @@ if %errorlevel% neq 0 (
     echo [ERROR] 'npm install' failed. See the output above for details.
     call :log "ERROR: 'npm install' failed with errorlevel %errorlevel%."
     cd /d "%ROOTDIR%"
+    echo [DEBUG] Exiting due to npm install failure
     goto :safe_exit
 )
 call :log "SUCCESS: npm dependencies installed."
@@ -95,6 +102,7 @@ echo ----------------------------------------------------------
 echo.
 
 REM --- Step 2: Install PM2
+echo [DEBUG] Reached PM2 installation
 echo ----------------------------------------------------------
 echo [2/3] Installing PM2 process manager globally...
 echo ----------------------------------------------------------
@@ -104,6 +112,7 @@ if %errorlevel% neq 0 (
     echo.
     echo [ERROR] Failed to install PM2 globally. See the output above for details.
     call :log "ERROR: Failed to install PM2 with errorlevel %errorlevel%."
+    echo [DEBUG] Exiting due to PM2 install failure
     goto :safe_exit
 )
 call :log "SUCCESS: PM2 installed globally."
@@ -114,6 +123,7 @@ echo ----------------------------------------------------------
 echo.
 
 REM --- Step 3: Configure and Start Server with PM2
+echo [DEBUG] Reached PM2 configuration and server launch
 echo ----------------------------------------------------------
 echo [3/3] Configuring server with PM2...
 echo ----------------------------------------------------------
@@ -129,6 +139,7 @@ if %errorlevel% neq 0 (
     echo.
     echo [ERROR] Failed to start the server with PM2.
     call :log "ERROR: Failed to start server with PM2."
+    echo [DEBUG] Exiting due to PM2 server start failure
     goto :safe_exit
 )
 call :log "SUCCESS: Server started with PM2."
