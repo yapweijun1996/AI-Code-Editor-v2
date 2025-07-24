@@ -5,6 +5,11 @@ REM ==========================================================
 REM  AI Code Editor - Final Safe Setup Script with Debug Mode
 REM ==========================================================
 
+REM --- Failsafe: Always pause at the very start so user sees script output, even if error happens early
+echo.
+echo [Notice] If this window closes immediately, you may need to run this script from a Command Prompt window.
+timeout /t 2 >nul
+
 REM --- Configuration
 REM --- Set DEBUG to 1 to enable detailed step-by-step logging
 set "DEBUG=1" 
@@ -51,7 +56,9 @@ if %errorlevel% neq 0 (
     echo.
     echo [ERROR] Administrative privileges are required.
     echo Please right-click on this script and select 'Run as administrator'.
+    echo The window will remain open for 10 seconds.
     call :log "ERROR: Script not run as administrator."
+    timeout /t 10
     goto :safe_exit
 )
 echo Privileges confirmed.
@@ -151,3 +158,4 @@ echo.
 echo ----------------------------------------------------------
 echo The setup script has finished. Press any key to close this window.
 pause
+timeout /t 2 >nul
