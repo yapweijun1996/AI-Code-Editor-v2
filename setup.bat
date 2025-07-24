@@ -1,91 +1,154 @@
 @echo off
+setlocal
+
 REM ==========================================================
-REM  AI Code Editor - SAFE SETUP SCRIPT
-REM  Runs in a simple, robust, and clear way for Windows
+REM  AI Code Editor - Final Safe Setup Script with Debug Mode
 REM ==========================================================
 
-REM ----- SETUP -----
-setlocal enableextensions
+REM --- Configuration
+REM --- Set DEBUG to 1 to enable detailed step-by-step logging
+set "DEBUG=1" 
 set "ROOTDIR=%~dp0"
-set "LOGFILE=%ROOTDIR%setup_debug.log"
-set "BACKEND=%ROOTDIR%backend"
+set "LOGFILE=%ROOTDIR%setup_activity.log"
+set "BACKEND_DIR=%ROOTDIR%backend"
 set "PM2_PROCESS_NAME=ai-code-editor"
 
-REM Clear old log
+REM --- Clear previous log file
 echo. > "%LOGFILE%"
 
-REM ----- HEADER -----
-echo ==========================================================
-echo        AI Code Editor - Setup
-echo ==========================================================
-echo.
-echo This script will install all necessary dependencies and set up the AI Code Editor.
-echo Make sure you have Node.js and npm installed!
-echo.
-echo Running from: %ROOTDIR%
-echo ----------------------------------------------------------
+:log
+echo [%date% %time%] %* >> "%LOGFILE%"
+goto :eof
 
-REM ----- ADMIN CHECK -----
+:debug_log
+if "%DEBUG%"=="1" (
+    echo [DEBUG] %*
+    call :log "[DEBUG] %*"
+)
+goto :eof
+
+REM --- Header
+echo ==========================================================
+echo        AI Code Editor Setup
+echo ==========================================================
+echo.
+echo This script will install dependencies and configure the server.
+echo Make sure Node.js and npm are installed and accessible in your PATH.
+if "%DEBUG%"=="1" echo [DEBUG] Debug Mode is ON.
+echo.
+call :log "Setup started."
+
+REM --- Log initial variables for debugging
+call :debug_log "ROOTDIR set to: %ROOTDIR%"
+call :debug_log "LOGFILE set to: %LOGFILE%"
+call :debug_log "BACKEND_DIR set to: %BACKEND_DIR%"
+
+REM --- Administrator Check
+echo Verifying administrator privileges...
+call :debug_log "Running 'net session' to check for admin rights."
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ERROR: This script requires administrative privileges.
-    echo Please right-click on the setup.bat file and select "Run as administrator".
-    goto SAFE_EXIT
+    echo.
+    echo [ERROR] Administrative privileges are required.
+    echo Please right-click on this script and select 'Run as administrator'.
+    call :log "ERROR: Script not run as administrator."
+    goto :safe_exit
 )
-echo OK: Administrative privileges confirmed.
+echo Privileges confirmed.
+call :debug_log "Admin privileges check passed."
 echo.
 
-REM ----- 1. BACKEND DEPENDENCIES -----
+REM --- Step 1: Install Backend Dependencies
+echo ----------------------------------------------------------
 echo [1/3] Installing backend dependencies...
-cd /d "%BACKEND%"
-npm install >> "%LOGFILE%" 2>&1
+echo This may take a few moments.
+echo ----------------------------------------------------------
+call :debug_log "Changing directory to backend: %BACKEND_DIR%"
+cd /d "%BACKEND_DIR%"
+call :debug_log "Current directory: %cd%"
+call :log "Changed directory to %BACKEND_DIR%"
+call :log "Running: npm install"
+call :debug_log "Executing 'npm install'. Output will be shown below."
+
+npm install
 if %errorlevel% neq 0 (
-    echo ERROR: Failed to install backend dependencies. See %LOGFILE% for details.
+    echo.
+    echo [ERROR] 'npm install' failed. See the output above for details.
+    call :log "ERROR: 'npm install' failed with errorlevel %errorlevel%."
     cd /d "%ROOTDIR%"
-    goto SAFE_EXIT
+    goto :safe_exit
 )
+call :log "SUCCESS: npm dependencies installed."
+call :debug_log "npm install completed successfully."
 cd /d "%ROOTDIR%"
+call :debug_log "Returned to root directory: %cd%"
+echo ----------------------------------------------------------
 echo Backend dependencies installed successfully.
+echo ----------------------------------------------------------
 echo.
 
-REM ----- 2. INSTALL PM2 -----
-echo [2/3] Installing pm2 globally...
-npm install pm2 -g >> "%LOGFILE%" 2>&1
+REM --- Step 2: Install PM2
+echo ----------------------------------------------------------
+echo [2/3] Installing PM2 process manager globally...
+echo ----------------------------------------------------------
+call :debug_log "Executing 'npm install pm2 -g'."
+npm install pm2 -g
 if %errorlevel% neq 0 (
-    echo ERROR: Failed to install pm2 globally. See %LOGFILE% for details.
-    goto SAFE_EXIT
+    echo.
+    echo [ERROR] Failed to install PM2 globally. See the output above for details.
+    call :log "ERROR: Failed to install PM2 with errorlevel %errorlevel%."
+    goto :safe_exit
 )
-echo pm2 installed successfully.
+call :log "SUCCESS: PM2 installed globally."
+call :debug_log "PM2 installed successfully."
+echo ----------------------------------------------------------
+echo PM2 installed successfully.
+echo ----------------------------------------------------------
 echo.
 
-REM ----- 3. START SERVER & AUTO-START -----
-echo [3/3] Starting server with pm2...
+REM --- Step 3: Configure and Start Server with PM2
+echo ----------------------------------------------------------
+echo [3/3] Configuring server with PM2...
+echo ----------------------------------------------------------
+call :log "Configuring PM2..."
+call :debug_log "Stopping and deleting any existing process: %PM2_PROCESS_NAME%"
 pm2 stop "%PM2_PROCESS_NAME%" >nul 2>&1
 pm2 delete "%PM2_PROCESS_NAME%" >nul 2>&1
-pm2 start backend/index.js --name "%PM2_PROCESS_NAME%" >> "%LOGFILE%" 2>&1
-if %errorlevel% neq 0 (
-    echo ERROR: Failed to start server with pm2. See %LOGFILE% for details.
-    goto SAFE_EXIT
-)
-pm2 save >> "%LOGFILE%" 2>&1
-pm2 startup >> "%LOGFILE%" 2>&1
+call :log "Stopped and deleted any existing process."
 
-echo Server started and configured with pm2.
+call :debug_log "Starting server with pm2: pm2 start '%BACKEND_DIR%\index.js' --name '%PM2_PROCESS_NAME%'"
+pm2 start "%BACKEND_DIR%\index.js" --name "%PM2_PROCESS_NAME%"
+if %errorlevel% neq 0 (
+    echo.
+    echo [ERROR] Failed to start the server with PM2.
+    call :log "ERROR: Failed to start server with PM2."
+    goto :safe_exit
+)
+call :log "SUCCESS: Server started with PM2."
+call :debug_log "Server started."
+
+call :debug_log "Saving PM2 process list."
+pm2 save
+call :log "PM2 process list saved."
+call :debug_log "Configuring PM2 startup."
+pm2 startup
+call :log "PM2 startup configured."
+echo ----------------------------------------------------------
+echo Server configured and started successfully.
+echo ----------------------------------------------------------
 echo.
 
-REM ----- DONE -----
+REM --- Final Message
 echo ==========================================================
 echo SETUP COMPLETE!
-echo ----------------------------------------------------------
-echo The backend is now running via pm2.
-echo Open http://localhost:3333 in your browser.
-echo.
-echo To check pm2 status, run: pm2 status
-echo To see logs, run: pm2 logs %PM2_PROCESS_NAME%
-echo Log file: %LOGFILE%
+echo ==========================================================
+echo The AI Code Editor backend is running via PM2.
+echo You can now access the editor at: http://localhost:3333
+call :log "Setup completed successfully."
 
-:SAFE_EXIT
+:safe_exit
+echo.
 echo ----------------------------------------------------------
-echo Press any key to exit.
+echo The setup script has finished. Press any key to close this window.
 pause >nul
 exit /b
