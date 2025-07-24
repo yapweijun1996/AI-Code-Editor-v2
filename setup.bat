@@ -150,5 +150,4 @@ call :log "Setup completed successfully."
 echo.
 echo ----------------------------------------------------------
 echo The setup script has finished. Press any key to close this window.
-pause >nul
-exit /b
+pause
