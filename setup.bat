@@ -24,15 +24,13 @@ echo Make sure you have Node.js and npm installed!
 echo.
 echo Running from: %ROOTDIR%
 echo ----------------------------------------------------------
+
 REM ----- ADMIN CHECK -----
 net session >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ERROR: Please run this script as Administrator!
-    echo (Right-click and select "Run as administrator")
-    echo ----------------------------------------------------------
-    echo See any details above. Press any key to close.
-    pause >nul
-    goto :eof
+    echo ERROR: This script requires administrative privileges.
+    echo Please right-click on the setup.bat file and select "Run as administrator".
+    goto SAFE_EXIT
 )
 echo OK: Administrative privileges confirmed.
 echo.
@@ -43,9 +41,7 @@ cd /d "%BACKEND%"
 npm install >> "%LOGFILE%" 2>&1
 if %errorlevel% neq 0 (
     echo ERROR: Failed to install backend dependencies. See %LOGFILE% for details.
-    echo ----------------------------------------------------------
     cd /d "%ROOTDIR%"
-    pause
     goto SAFE_EXIT
 )
 cd /d "%ROOTDIR%"
@@ -57,8 +53,6 @@ echo [2/3] Installing pm2 globally...
 npm install pm2 -g >> "%LOGFILE%" 2>&1
 if %errorlevel% neq 0 (
     echo ERROR: Failed to install pm2 globally. See %LOGFILE% for details.
-    echo ----------------------------------------------------------
-    pause
     goto SAFE_EXIT
 )
 echo pm2 installed successfully.
@@ -71,8 +65,6 @@ pm2 delete "%PM2_PROCESS_NAME%" >nul 2>&1
 pm2 start backend/index.js --name "%PM2_PROCESS_NAME%" >> "%LOGFILE%" 2>&1
 if %errorlevel% neq 0 (
     echo ERROR: Failed to start server with pm2. See %LOGFILE% for details.
-    echo ----------------------------------------------------------
-    pause
     goto SAFE_EXIT
 )
 pm2 save >> "%LOGFILE%" 2>&1
@@ -91,8 +83,9 @@ echo.
 echo To check pm2 status, run: pm2 status
 echo To see logs, run: pm2 logs %PM2_PROCESS_NAME%
 echo Log file: %LOGFILE%
-echo ----------------------------------------------------------
+
 :SAFE_EXIT
-echo Press any key to exit. The window will remain open for review until you do.
+echo ----------------------------------------------------------
+echo Press any key to exit.
 pause >nul
 exit /b
